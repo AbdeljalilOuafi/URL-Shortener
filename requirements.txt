@@ -1,0 +1,19 @@
+# Django
+Django==4.2.7
+djangorestframework==3.14.0
+drf-spectacular==0.26.5
+django-filter==23.5
+
+# Database
+psycopg2-binary==2.9.9  # For PostgreSQL in production
+
+# Environment variables
+django-environ==0.11.2
+
+# CORS support
+django-cors-headers==4.3.1
+
+# Utilities
+requests==2.31.0
+python-dateutil==2.8.2
+pytz==2023.3
