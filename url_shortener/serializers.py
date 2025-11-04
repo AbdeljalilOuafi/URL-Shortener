@@ -53,13 +53,6 @@ class ShortURLCreateSerializer(serializers.ModelSerializer):
             else:
                 domain = 'localhost'
         
-        # Validate domain is in allowed list (if configured)
-        allowed_domains = getattr(settings, 'ALLOWED_SHORT_URL_DOMAINS', [])
-        if allowed_domains and domain not in allowed_domains:
-            raise serializers.ValidationError({
-                'domain': f"Domain '{domain}' is not in the allowed domains list."
-            })
-        
         validated_data['domain'] = domain
         
         # Remove None values for optional fields
