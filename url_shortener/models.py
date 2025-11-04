@@ -22,8 +22,10 @@ class ShortURL(models.Model):
     
     short_code = models.CharField(
         max_length=10,
+        blank=True,
+        default='',
         db_index=True,
-        help_text="Unique short code (e.g., 'abc123')"
+        help_text="Unique short code (e.g., 'abc123') - auto-generated if not provided"
     )
     
     original_url = models.URLField(
@@ -33,8 +35,10 @@ class ShortURL(models.Model):
     
     domain = models.CharField(
         max_length=255,
+        blank=True,
+        default='',
         db_index=True,
-        help_text="The domain for this short URL (e.g., 'pay.ao.com')"
+        help_text="The domain for this short URL (e.g., 'pay.ao.com') - auto-detected from request"
     )
     
     title = models.CharField(

@@ -23,59 +23,59 @@ A new index will be created:
 
 ## Migration Steps
 
-### Option 1: Using Django Migration (Recommended)
+### Option 1: Manual SQL (Recommended for Existing Database)
 
-If you have Django access to the database:
+Since you already have the `short_urls` table with the `account_id` column, manually remove it via Supabase UI or SQL:
 
-```bash
-# 1. Pull the latest code
-git pull
+**Via Supabase UI:**
+1. Go to Table Editor → `short_urls`
+2. Click on the `account_id` column
+3. Delete the column
 
-# 2. Run the migration
-python manage.py migrate url_shortener 0002_remove_account_relationship
-
-# 3. Verify the migration
-python manage.py showmigrations url_shortener
-```
-
-### Option 2: Manual SQL (Supabase UI or psql)
-
-If you prefer to remove the column manually via Supabase UI or SQL:
+**Or via SQL Editor:**
 
 ```sql
--- Step 1: Drop the foreign key constraint
+-- Step 1: Drop the foreign key constraint (if exists)
 ALTER TABLE short_urls 
 DROP CONSTRAINT IF EXISTS short_urls_account_id_fkey;
 
--- Step 2: Drop the column
+-- Step 2: Drop the old index
+DROP INDEX IF EXISTS short_urls_account_id_4ecf26_idx;
+DROP INDEX IF EXISTS short_urls_account_idx;
+
+-- Step 3: Drop the column
 ALTER TABLE short_urls 
 DROP COLUMN IF EXISTS account_id;
 
--- Step 3: Drop the old index
-DROP INDEX IF EXISTS short_urls_account_id_idx;
-
--- Step 4: Create new index for performance
-CREATE INDEX IF NOT EXISTS short_urls_created_at_idx 
+-- Step 4: Create new index for better performance
+CREATE INDEX IF NOT EXISTS short_urls_created_idx 
 ON short_urls (created_at DESC);
 ```
 
-**Then mark the migration as applied:**
+**Then fake the migration in Django:**
 
 ```bash
-python manage.py migrate url_shortener 0002_remove_account_relationship --fake
+# Mark the migration as already applied (since we did it manually)
+python manage.py migrate url_shortener --fake
 ```
 
-### Option 3: Fresh Database
+### Option 2: Fresh Database Setup
 
-If you're starting fresh or can recreate the database:
+If you're starting with a new database or can recreate the tables:
+
+### Option 2: Fresh Database Setup
+
+If you're starting with a new database or can recreate the tables:
 
 ```bash
-# 1. Drop existing tables (BE CAREFUL - THIS DELETES DATA!)
-python manage.py migrate url_shortener zero
-
-# 2. Run all migrations from scratch
+# 1. Run the initial migration
 python manage.py migrate
+
+# 2. Create a superuser
+python manage.py createsuperuser
 ```
+
+This will create all tables from scratch without the `account_id` column.
 
 ## Verification
 

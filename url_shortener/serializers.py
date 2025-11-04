@@ -25,6 +25,8 @@ class ShortURLCreateSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             'title': {'required': False},
             'expires_at': {'required': False},
+            'domain': {'required': False},
+            'short_code': {'required': False},
         }
     
     def validate_original_url(self, value):
