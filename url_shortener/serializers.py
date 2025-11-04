@@ -15,18 +15,13 @@ class ShortURLCreateSerializer(serializers.ModelSerializer):
     - If not provided, uses request domain from middleware
     - Falls back to localhost for testing
     """
-    # Explicitly declare optional fields
-    domain = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255)
-    short_code = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=10)
     
     class Meta:
         model = ShortURL
-        fields = ['original_url', 'title', 'expires_at', 'domain', 'short_code']
+        fields = ['original_url', 'title', 'expires_at']
         extra_kwargs = {
             'title': {'required': False},
             'expires_at': {'required': False},
-            'domain': {'required': False},
-            'short_code': {'required': False},
         }
     
     def validate_original_url(self, value):
