@@ -24,8 +24,6 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-url-shortener-dev-key-ch
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env('DEBUG', default=True)
 
-# Allow all hosts for multi-domain URL shortener
-# In production, you can restrict to specific domains if needed
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['*'])
 
 # Application definition

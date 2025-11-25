@@ -15,10 +15,13 @@ class ShortURLCreateSerializer(serializers.ModelSerializer):
     - If not provided, uses request domain from middleware
     - Falls back to localhost for testing
     """
+    # Explicitly declare optional fields
+    domain = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=255)
+    short_code = serializers.CharField(required=False, allow_blank=True, allow_null=True, max_length=10)
     
     class Meta:
         model = ShortURL
-        fields = ['original_url', 'title', 'expires_at']
+        fields = ['original_url', 'title', 'expires_at', 'domain', 'short_code']
         extra_kwargs = {
             'title': {'required': False},
             'expires_at': {'required': False},
@@ -37,21 +40,18 @@ class ShortURLCreateSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         
         # Determine domain to use
-        domain = validated_data.get('domain')
-        
-        if not domain:
-            # Try to get domain from request (set by middleware)
+        # IMPORTANT: Only set domain if not explicitly provided
+        if not validated_data.get('domain'):
+            # Domain not provided, detect from request
             if request and hasattr(request, 'original_host'):
-                domain = request.original_host
+                validated_data['domain'] = request.original_host
             elif request:
-                domain = request.get_host().split(':')[0]
+                validated_data['domain'] = request.get_host().split(':')[0]
             else:
-                domain = 'localhost'
+                validated_data['domain'] = 'localhost'
         
-        validated_data['domain'] = domain
-        
-        # Remove None values for optional fields
-        if 'short_code' in validated_data and not validated_data['short_code']:
+        # Remove None/empty values for optional fields
+        if 'short_code' in validated_data and not validated_data.get('short_code'):
             validated_data.pop('short_code')
         
         return super().create(validated_data)
@@ -85,7 +85,11 @@ class ShortURLResponseSerializer(serializers.ModelSerializer):
     
     def get_is_expired(self, obj):
         """Check if URL is expired"""
-        return obj.is_expired()
+        try:
+            return obj.is_expired()
+        except (TypeError, ValueError) as e:
+            # Handle malformed expires_at data
+            return False
 
 
 class ClickAnalyticsSerializer(serializers.ModelSerializer):

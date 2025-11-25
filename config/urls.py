@@ -13,6 +13,28 @@ def health_check(request):
     return JsonResponse({'status': 'ok', 'service': 'url-shortener'})
 
 
+def caddy_validate_domain(request):
+    """
+    Caddy calls this endpoint to validate domains before issuing SSL certificates.
+    Returns 200 to allow certificate issuance, 4xx to deny.
+    
+    This enables on-demand TLS: Caddy will automatically obtain SSL certificates
+    for any domain pointed to this server.
+    """
+    domain = request.GET.get('domain', '')
+    
+    # Option 1: Allow all domains (recommended for public service)
+    # Any domain pointed to your server will get automatic SSL
+    return JsonResponse({'allow': True, 'domain': domain})
+    
+    # Option 2: Check against allowed domains (uncomment if you want restrictions)
+    # from django.conf import settings
+    # allowed_domains = getattr(settings, 'ALLOWED_SHORT_URL_DOMAINS', [])
+    # if not allowed_domains or domain in allowed_domains:
+    #     return JsonResponse({'allow': True, 'domain': domain})
+    # return JsonResponse({'allow': False, 'domain': domain}, status=403)
+
+
 def api_info(request):
     """API information endpoint"""
     return JsonResponse({
@@ -34,6 +56,9 @@ urlpatterns = [
     
     # Health check
     path('health/', health_check, name='health_check'),
+    
+    # Caddy domain validation (for automatic SSL certificates)
+    path('caddy/validate-domain', caddy_validate_domain, name='caddy_validate_domain'),
     
     # API info
     path('api/', api_info, name='api_info'),
