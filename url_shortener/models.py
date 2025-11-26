@@ -22,6 +22,8 @@ class ShortURL(models.Model):
     
     short_code = models.CharField(
         max_length=10,
+        blank=True,
+        null=True,
         db_index=True,
         help_text="Unique short code (e.g., 'abc123')"
     )
@@ -33,6 +35,8 @@ class ShortURL(models.Model):
     
     domain = models.CharField(
         max_length=255,
+        blank=True,
+        null=True,
         db_index=True,
         help_text="The domain for this short URL (e.g., 'pay.ao.com')"
     )
