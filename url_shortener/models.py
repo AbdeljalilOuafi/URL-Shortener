@@ -77,7 +77,12 @@ class ShortURL(models.Model):
             models.Index(fields=['domain', 'short_code']),
             models.Index(fields=['created_at']),
         ]
-        unique_together = [['domain', 'short_code']]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['domain', 'short_code'],
+                name='short_urls_domain_short_code_unique'
+            )
+        ]
     
     def __str__(self):
         return f"{self.domain}/{self.short_code} → {self.original_url[:50]}"
