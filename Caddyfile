@@ -1,0 +1,106 @@
+# Caddyfile for URL Shortener with On-Demand TLS
+# This configuration enables automatic SSL certificate issuance for any configured domain
+
+{
+    # Global options
+    email admin@hq.coach  # Change to your email for Let's Encrypt notifications
+    
+    # On-demand TLS configuration
+    on_demand_tls {
+        # Ask Django app to validate domain before issuing certificate
+        ask http://localhost:8000/caddy/validate-domain
+        
+        # Rate limiting to prevent abuse
+        interval 2m
+        burst 5
+    }
+    
+    # Enable admin API (optional - for monitoring and management)
+    admin :2019
+    
+    # Logging
+    log {
+        level INFO
+        output file /var/log/caddy/access.log {
+            roll_size 100mb
+            roll_keep 10
+        }
+    }
+}
+
+# Main server block - responds to ALL domains (wildcard)
+:443 {
+    # Enable on-demand TLS for all domains
+    tls {
+        on_demand
+    }
+    
+    # Reverse proxy to Django application
+    reverse_proxy localhost:8000 {
+        # Headers to preserve
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        
+        # Health check
+        health_uri /health/
+        health_interval 10s
+        health_timeout 5s
+    }
+    
+    # Gzip compression
+    encode gzip
+    
+    # Security headers
+    header {
+        # Remove server header
+        -Server
+        
+        # Security headers
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+    
+    # Logging per request
+    log {
+        output file /var/log/caddy/access.log
+        format json
+    }
+}
+
+# HTTP to HTTPS redirect for all domains
+:80 {
+    # Allow ACME HTTP-01 challenge
+    # This is necessary for Let's Encrypt certificate issuance
+    
+    # Redirect all other traffic to HTTPS
+    redir https://{host}{uri} permanent
+}
+
+# Optional: Default domain (shorten.hq.coach) with specific config
+shorten.hq.coach {
+    # Use regular automatic HTTPS (not on-demand)
+    tls {
+        # Caddy will obtain certificate automatically
+    }
+    
+    reverse_proxy localhost:8000 {
+        header_up Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+    }
+    
+    encode gzip
+    
+    header {
+        -Server
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "SAMEORIGIN"
+    }
+}

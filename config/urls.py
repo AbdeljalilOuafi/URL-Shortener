@@ -13,26 +13,45 @@ def health_check(request):
     return JsonResponse({'status': 'ok', 'service': 'url-shortener'})
 
 
+@csrf_exempt
 def caddy_validate_domain(request):
     """
     Caddy calls this endpoint to validate domains before issuing SSL certificates.
-    Returns 200 to allow certificate issuance, 4xx to deny.
+    Returns 200 to allow certificate issuance, 403 to deny.
     
     This enables on-demand TLS: Caddy will automatically obtain SSL certificates
-    for any domain pointed to this server.
+    for domains that are registered in DomainConfiguration model.
+    
+    Caddy sends requests like: GET /caddy/validate-domain?domain=forms.example.com
     """
-    domain = request.GET.get('domain', '')
+    domain = request.GET.get('domain', '').lower()
     
-    # Option 1: Allow all domains (recommended for public service)
-    # Any domain pointed to your server will get automatic SSL
-    return JsonResponse({'allow': True, 'domain': domain})
+    if not domain:
+        return JsonResponse({'error': 'domain parameter required'}, status=400)
     
-    # Option 2: Check against allowed domains (uncomment if you want restrictions)
-    # from django.conf import settings
-    # allowed_domains = getattr(settings, 'ALLOWED_SHORT_URL_DOMAINS', [])
-    # if not allowed_domains or domain in allowed_domains:
-    #     return JsonResponse({'allow': True, 'domain': domain})
-    # return JsonResponse({'allow': False, 'domain': domain}, status=403)
+    # Check if domain is configured and active in database
+    from url_shortener.models import DomainConfiguration
+    
+    try:
+        config = DomainConfiguration.objects.get(
+            domain=domain,
+            is_active=True
+        )
+        
+        # Domain is configured and active - allow certificate issuance
+        return JsonResponse({
+            'allow': True,
+            'domain': domain,
+            'account_id': config.account_id
+        })
+    
+    except DomainConfiguration.DoesNotExist:
+        # Domain not configured - deny certificate issuance
+        return JsonResponse({
+            'allow': False,
+            'domain': domain,
+            'error': 'Domain not configured'
+        }, status=403)
 
 
 def api_info(request):

@@ -154,6 +154,10 @@ CORS_ALLOW_CREDENTIALS = True
 # URL Shortener specific settings
 ALLOWED_SHORT_URL_DOMAINS = env.list('ALLOWED_SHORT_URL_DOMAINS', default=[])
 
+# Internal API authentication
+# Used by CRM backend to configure domains via internal API
+INTERNAL_API_KEY = env.str('INTERNAL_API_KEY', default='dev-internal-api-key-change-in-production')
+
 # Rate limiting (optional - can be implemented later)
 RATE_LIMIT_ENABLED = env.bool('RATE_LIMIT_ENABLED', default=False)
 RATE_LIMIT_PER_MINUTE = env.int('RATE_LIMIT_PER_MINUTE', default=60)

@@ -158,3 +158,109 @@ class ClickAnalytics(models.Model):
     
     def __str__(self):
         return f"Click on {self.short_url.short_code} at {self.clicked_at}"
+
+
+class DomainConfiguration(models.Model):
+    """
+    Tracks configured domains for the URL shortener service.
+    Used by Caddy's on-demand TLS to validate domain ownership.
+    """
+    SSL_STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('active', 'Active'),
+        ('failed', 'Failed'),
+        ('expired', 'Expired'),
+    ]
+    
+    DOMAIN_TYPE_CHOICES = [
+        ('forms', 'Forms Domain'),
+        ('payment', 'Payment Domain'),
+        ('other', 'Other'),
+    ]
+    
+    domain = models.CharField(
+        max_length=255,
+        unique=True,
+        db_index=True,
+        help_text="Fully qualified domain name (e.g., 'forms.clientbusiness.com')"
+    )
+    
+    account_id = models.IntegerField(
+        db_index=True,
+        help_text="CRM Account ID that owns this domain"
+    )
+    
+    domain_type = models.CharField(
+        max_length=20,
+        choices=DOMAIN_TYPE_CHOICES,
+        default='forms',
+        help_text="Type of domain (forms, payment, etc.)"
+    )
+    
+    is_verified = models.BooleanField(
+        default=False,
+        help_text="Whether domain DNS is verified and points to this server"
+    )
+    
+    is_active = models.BooleanField(
+        default=True,
+        help_text="Whether domain configuration is active"
+    )
+    
+    ssl_status = models.CharField(
+        max_length=20,
+        choices=SSL_STATUS_CHOICES,
+        default='pending',
+        help_text="SSL certificate status"
+    )
+    
+    configured_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # SSL certificate details
+    ssl_issued_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When SSL certificate was issued"
+    )
+    
+    ssl_expires_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When SSL certificate expires"
+    )
+    
+    # Metadata
+    use_caddy = models.BooleanField(
+        default=True,
+        help_text="Use Caddy for automatic SSL (vs manual nginx config)"
+    )
+    
+    notes = models.TextField(
+        blank=True,
+        help_text="Optional admin notes about this domain"
+    )
+    
+    class Meta:
+        db_table = 'domain_configurations'
+        ordering = ['-configured_at']
+        indexes = [
+            models.Index(fields=['domain']),
+            models.Index(fields=['account_id']),
+            models.Index(fields=['is_active', 'is_verified']),
+        ]
+    
+    def __str__(self):
+        return f"{self.domain} (Account {self.account_id}) - {self.ssl_status}"
+    
+    def mark_ssl_active(self):
+        """Mark SSL certificate as active."""
+        self.ssl_status = 'active'
+        self.ssl_issued_at = timezone.now()
+        self.is_verified = True
+        self.save(update_fields=['ssl_status', 'ssl_issued_at', 'is_verified', 'updated_at'])
+    
+    def mark_ssl_failed(self):
+        """Mark SSL certificate issuance as failed."""
+        self.ssl_status = 'failed'
+        self.save(update_fields=['ssl_status', 'updated_at'])

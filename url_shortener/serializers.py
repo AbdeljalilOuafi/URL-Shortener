@@ -2,7 +2,7 @@
 Serializers for URL Shortener API.
 """
 from rest_framework import serializers
-from .models import ShortURL, ClickAnalytics
+from .models import ShortURL, ClickAnalytics, DomainConfiguration
 
 
 class ShortURLCreateSerializer(serializers.ModelSerializer):
@@ -131,3 +131,86 @@ class BulkShortURLSerializer(serializers.Serializer):
         max_length=100
     )
     domain = serializers.CharField(required=False)
+
+
+# =============================================================================
+# Internal API Serializers (for domain configuration)
+# =============================================================================
+
+class DomainConfigurationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for domain configuration.
+    Used by internal API for domain management.
+    """
+    class Meta:
+        model = DomainConfiguration
+        fields = [
+            'id',
+            'domain',
+            'account_id',
+            'domain_type',
+            'is_verified',
+            'is_active',
+            'ssl_status',
+            'configured_at',
+            'updated_at',
+            'ssl_issued_at',
+            'ssl_expires_at',
+            'use_caddy',
+            'notes',
+        ]
+        read_only_fields = [
+            'id',
+            'configured_at',
+            'updated_at',
+            'ssl_issued_at',
+            'ssl_expires_at',
+        ]
+    
+    def validate_domain(self, value):
+        """Validate domain format."""
+        import re
+        # Basic domain validation
+        domain_pattern = r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+        if not re.match(domain_pattern, value):
+            raise serializers.ValidationError("Invalid domain format")
+        return value.lower()
+
+
+class DomainConfigureRequestSerializer(serializers.Serializer):
+    """
+    Serializer for domain configuration requests from CRM backend.
+    """
+    domain = serializers.CharField(max_length=255)
+    account_id = serializers.IntegerField()
+    domain_type = serializers.ChoiceField(
+        choices=['forms', 'payment', 'other'],
+        default='forms'
+    )
+    use_caddy = serializers.BooleanField(default=True)
+    notes = serializers.CharField(required=False, allow_blank=True)
+    
+    def validate_domain(self, value):
+        """Validate domain format."""
+        import re
+        domain_pattern = r'^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$'
+        if not re.match(domain_pattern, value):
+            raise serializers.ValidationError("Invalid domain format")
+        return value.lower()
+
+
+class DomainStatusSerializer(serializers.ModelSerializer):
+    """
+    Serializer for domain status responses.
+    """
+    class Meta:
+        model = DomainConfiguration
+        fields = [
+            'domain',
+            'is_verified',
+            'is_active',
+            'ssl_status',
+            'ssl_issued_at',
+            'ssl_expires_at',
+            'configured_at',
+        ]
