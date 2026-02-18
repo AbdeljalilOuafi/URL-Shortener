@@ -7,7 +7,8 @@ All endpoints require authentication via X-Internal-API-Key header.
 import logging
 from django.conf import settings
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from django.db import IntegrityError
 from functools import wraps
@@ -59,6 +60,7 @@ def require_internal_api_key(view_func):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 @require_internal_api_key
 def configure_domain(request):
     """
@@ -188,6 +190,7 @@ def configure_domain(request):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 @require_internal_api_key
 def get_domain_status(request, domain):
     """
@@ -233,6 +236,7 @@ def get_domain_status(request, domain):
 
 
 @api_view(['DELETE'])
+@permission_classes([AllowAny])
 @require_internal_api_key
 def remove_domain(request, domain):
     """
@@ -286,6 +290,7 @@ def remove_domain(request, domain):
 
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 @require_internal_api_key
 def list_account_domains(request, account_id):
     """
@@ -339,6 +344,7 @@ def list_account_domains(request, account_id):
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 @require_internal_api_key
 def update_domain_ssl_status(request, domain):
     """
