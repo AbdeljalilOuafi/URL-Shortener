@@ -32,27 +32,18 @@
     
     # Reverse proxy to Django application
     reverse_proxy localhost:8000 {
-        # Headers to preserve
         header_up Host {host}
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
         
-        # Health check
         health_uri /health/
         health_interval 10s
         health_timeout 5s
     }
     
-    # Gzip compression
     encode gzip
     
-    # Security headers
     header {
-        # Remove server header
         -Server
-        
-        # Security headers
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "SAMEORIGIN"
@@ -60,7 +51,6 @@
         Referrer-Policy "strict-origin-when-cross-origin"
     }
     
-    # Logging per request
     log {
         output file /var/log/caddy/access.log
         format json
@@ -78,16 +68,9 @@
 
 # Optional: Default domain (shorten.hq.coach) with specific config
 shorten.hq.coach {
-    # Use regular automatic HTTPS (not on-demand)
-    tls {
-        # Caddy will obtain certificate automatically
-    }
-    
     reverse_proxy localhost:8000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-For {remote_host}
-        header_up X-Forwarded-Proto {scheme}
     }
     
     encode gzip
