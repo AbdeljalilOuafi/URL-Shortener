@@ -7,12 +7,7 @@
     
     # On-demand TLS configuration
     on_demand_tls {
-        # Ask Django app to validate domain before issuing certificate
         ask http://localhost:8000/caddy/validate-domain
-        
-        # Rate limiting to prevent abuse
-        interval 2m
-        burst 5
     }
     
     # Enable admin API (optional - for monitoring and management)
